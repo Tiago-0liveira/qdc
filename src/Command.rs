@@ -28,7 +28,7 @@ pub mod command {
 		return [
 			Command::new("new", "Creates a new shortcut", "<command> <directory_path> <shortcut_name>", ('n', "new")),
 			Command::new("help", "Shows this list or helps with command", "<command>", ('h', "help")),
-			Command::new("shortcuts", "Shows the shortcuts list", "<command>", ('l', "list")),
+			Command::new("shortcuts", "Shows the shortcuts list", "<command>", ('s', "shortcuts")),
 			Command::new("edit", "Edits a shortcut", "<command> <shortcut_name> <new_shortcut_name> <new_directory_path>", ('e', "edit")),
 			Command::new("delete", "Deletes a shortcut", "<command> <shortcut_name|index|directory_path>", ('d', "del")),
 		];

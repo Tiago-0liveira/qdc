@@ -69,7 +69,7 @@ def t(x):
 #print(f"\n\n{'*'*12}Global Tests{'*'*12}\n")
 #for test in global_tests: t(test)
 
-for i,x in enumerate(["n", "new","h","help","l","list","e","edit","d","delete"]):
+for i,x in enumerate(["n", "new","h","help","s","shortcuts","e","edit","d","delete"]):
 	for y in [x, f"--{x}" if (i+1) % 2 == 0 else f"-{x}"]:
 		for z in ["", "awd", "aawd awd", "Eawdawd awd awd", "asdawd awd awd aw"]:
 			t(f"{y} {z}")
