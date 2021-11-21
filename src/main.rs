@@ -35,10 +35,21 @@ fn process_cli_args(args: Vec<String>) {
         c.special_args.1 == (&first_arg).to_string() ||
         c.special_args.0.to_string() == (&first_arg).to_string()
     );
-    if com.is_none() { 
-        println!("Command {} not found", first_arg.red());
-        println!("Use qdc help to see available commands!");
-        exit(1);
+    let mut file_contents = helpers::get_file_contents();
+    let shortcutNames = helpers::get_shortcut_names(&file_contents);
+    let shortcutPaths = helpers::get_shortcut_paths(&file_contents);
+    if com.is_none() {
+        if shortcutNames.contains(&first_arg) {
+            let w = file_contents.iter().find(|s| s.name == (&first_arg).to_string()).unwrap();
+            println!("{}", &w.path);
+
+            env::set_current_dir(Path::new(&w.path)).expect("Failed to set current directory");
+            exit(0);
+        } else {
+            println!("Command {} not found", first_arg.red());
+            println!("Use qdc help to see available commands!");
+            exit(1);
+        }
     }
     let com = com.unwrap();
     if (&com).args_num > (&args).len() - 2 {
@@ -46,9 +57,6 @@ fn process_cli_args(args: Vec<String>) {
         exit(1);
     }
     let args = (&args)[2..].to_vec();
-    let mut file_contents = helpers::get_file_contents();
-    let shortcutNames = helpers::get_shortcut_names(&file_contents);
-    let shortcutPaths = helpers::get_shortcut_paths(&file_contents);
     match com.name.as_str() {
         "new" => {
             if !args[0].trim().is_empty() {
@@ -59,8 +67,8 @@ fn process_cli_args(args: Vec<String>) {
                         if Path::new(&path).exists() {
                             if Path::new(&path).is_dir() {
                                 file_contents.push(helpers::Record::new((&shortcutName).to_string(), (&path).to_string()));
-                                helpers::save_file_contents(file_contents);
-                                println!("Shortcut {} created", shortcutName.green());
+                                helpers::save_file_contents(&file_contents);
+                                println!("Shortcut {} created with path: {}", shortcutName.green(), (&path).to_string().cyan());
                             } else {
                                 println!("Path {} is not a directory", path.red());
                                 exit(1);
@@ -102,9 +110,58 @@ fn process_cli_args(args: Vec<String>) {
                 show_help();
             }
         },
-        "shortcuts" => {},
-        "edit" => {},
-        "delete" => {},
+        "shortcuts" => {
+            if file_contents.len() != 0 {
+                println!("{:>10} | {}", "name".bold().blue(), "path".bold().green());
+                file_contents.iter().for_each(|s| {
+                    println!("{}", s);
+                });
+            } else {
+                println!("No shortcuts {}!", "found".red());
+            }
+        },
+        "edit" => {
+            let rec = (&file_contents).into_iter().position(|c|
+                c.name.trim_start_matches("-") == (&args[0]).to_string().trim_start_matches("-")
+            );
+            if !rec.is_none() {
+                let rec_index = (&file_contents).into_iter().position(|c|
+                    c.name.trim_start_matches("-") == (&args[0]).to_string().trim_start_matches("-")
+                );
+                if &args[1] == "~" && &args[2] == "~" {println!("Are you {}", "dumb?".bold().red()); exit(1);}
+                if Path::new(&args[2]).exists() {
+                    if Path::new(&args[2]).is_dir() {
+                        file_contents[rec_index.unwrap()] = helpers::Record::new(args[1].trim().to_string(), args[2].trim().to_string());
+                        helpers::save_file_contents(&file_contents);
+                    } else {
+                        println!("Path {} is not a directory", args[2].red());
+                        exit(1);
+                    }
+                } else {
+                    println!("Path {} is invalid!", args[2].red());
+                    exit(1);
+                }
+            } else {
+                println!("Shortcut {} not found", args[0].red());
+                exit(1);
+            }
+        },
+        "delete" => {
+            let rec: Option<&helpers::Record> = file_contents.iter().find(|c|
+                c.name == (&args[0]).to_string().trim_start_matches("-")
+            );
+            if !rec.is_none() {
+                let record = &rec.unwrap();
+                let rec_index = file_contents.iter().position(|s| s.name == record.name);
+                let mut w = file_contents.clone();
+                w.remove(rec_index.unwrap());
+                helpers::save_file_contents(&w);
+                println!("Shortcut {} deleted!", record.name.green());
+            } else {
+                println!("Shortcut {} not found", args[0].red());
+                exit(1);
+            }
+        },
         _ => {
             println!("Command {} not found!", first_arg.red());
             exit(1);
