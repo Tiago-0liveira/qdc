@@ -3,7 +3,7 @@ pub mod helpers{
 	use serde_json::Result;
 	use std::{env, fs};
 	use std::process::exit;
-	use std::path::Path;
+	use std::path::{Path, PathBuf};
 
 	#[derive(Serialize, Deserialize)]
 	pub struct Record {
@@ -19,64 +19,62 @@ pub mod helpers{
 			}
 		}
 	}
-	const RECORDS_FILE_PATH: &str = "config\\data.json";
-
-	pub fn get_record_file_path() -> String {
-		let path = env::args().next().unwrap();
-		let v = path.split("\\").collect::<Vec<&str>>();
-		return v[..(v.len()-1)].join("\\")+"\\"+RECORDS_FILE_PATH;
+	pub trait Back {
+		fn back(&self) -> PathBuf;
 	}
-	pub fn get_file_contents() -> Vec<Record> {
-		match fs::read_to_string(get_record_file_path()) {
-			Ok(data) => {
-				let data: Result<Vec<Record>> = serde_json::from_str(&data);
-				match data {
-					Ok(data) => return data,
-					Err(err) => {
-						println!("{}", err);
+	pub trait EnsurePathExists {
+		fn ensure_path_exists(&self);
+	}
+	impl Back for Path {
+		fn back(&self) -> PathBuf {
+			let mut v = (&self).to_str().unwrap().split("\\").collect::<Vec<&str>>();
+			v.remove(v.len() - 1);
+			return Path::new(&v.join("\\")).to_path_buf();
+		}
+	}
+	impl EnsurePathExists for Path {
+		fn ensure_path_exists(&self){
+			if !self.exists() {
+				match fs::create_dir_all(self.back()) {
+					Ok(_) => {
+						match fs::write(self, if self.extension().unwrap().to_str().unwrap() == "json" {"[]"} else {""}) {
+							Ok(_) => {},
+							Err(e) => {
+								println!("{}", e);
+								exit(1)
+							}
+						}
+					},
+					Err(e) => {
+						println!("{}", e);
 						exit(1);
 					}
 				}
+			};
+		}
+	}
+	const RECORDS_FILE_PATH: &str = "config\\data.json";
+
+	pub fn get_record_file_path() -> PathBuf {
+		let path = env::current_exe().unwrap();
+		return Path::new(&path).back().join(RECORDS_FILE_PATH);
+	}
+	pub fn get_file_contents() -> Vec<Record> {
+		get_record_file_path().ensure_path_exists();
+		match fs::read_to_string(get_record_file_path()) {
+			Ok(data_buf) => {
+				let data: Result<Vec<Record>> = serde_json::from_str(&data_buf);
+				return data.unwrap();
 			},
-			Err(err) => {
-				if err.kind() == std::io::ErrorKind::NotFound {
-					let path = env::args().next().unwrap();
-					return match fs::write(get_record_file_path(), "[]") {
-						Err(_) => {
-							let v = path.split("\\").collect::<Vec<&str>>();
-							match fs::create_dir(v[..(v.len()-1)].join("\\")+"\\config") {
-								Ok(_) => Vec::new(),
-								Err(err) => {
-									match err.kind() {
-										std::io::ErrorKind::AlreadyExists => {
-											match fs::write(get_record_file_path(), "[]") {
-												Ok(_) => Vec::new(),
-												Err(err) => {
-													println!("{}", err);
-													exit(1);
-												}
-											}
-										},
-										_ => {
-											println!("{}", err);
-											exit(1);
-										}
-									}
-								}
-							}
-						},
-						Ok(_) => Vec::new()
-					}
-				} else {
-					println!("{}", err);
-					exit(1);
-				}
+			Err(e) => {
+				println!("{}", e);
+				exit(1);
 			}
-		};
+		}
 	}
 	pub fn save_file_contents(data: Vec<Record>) {
 		let data = serde_json::to_string(&data).unwrap();
-		fs::write(Path::new(RECORDS_FILE_PATH), data).expect("Unable to write file");
+		fs::write(get_record_file_path(), data).expect("Unable to write file");
 	}
 	pub fn get_shortcut_names(data: &Vec<Record>) -> Vec<String> {
 		let mut names: Vec<String> = Vec::new();
