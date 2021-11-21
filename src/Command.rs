@@ -28,17 +28,17 @@ pub mod command {
 	}
 
 	impl Command {
-		fn show_Usage(&self) {
-			println!(" {} Help:", self.name);
-			println!("\n{}", self.description);
-			println!("{} Usage:", self.usage);
+		pub fn show_Usage(&self) {
+			println!("\n|{:^16}: {}","Help for command", self.name.cyan().bold());
+			println!("|{:^16}: {}","Description".green(), self.description);
+			println!("|{:^16}: {}","Usage".blue(), self.usage);
 		}
 	}
 
 	pub(crate) fn get_commands() -> [Command; 5] {
 		return [
 			Command::new("new", "Creates a new shortcut", "<new|-n|--new> <directory_path> <shortcut_name>", ('n', "new"), 2),
-			Command::new("help", "Shows this list or helps with command", "<help|-h|--help>", ('h', "help"), 0),
+			Command::new("help", "Shows the commands list or helps with a specific command", "<help|-h|--help> <?command_name>", ('h', "help"), 0),
 			Command::new("shortcuts", "Shows the shortcuts list", "<shortcuts|-s|--shortcuts>", ('s', "shortcuts"), 0),
 			Command::new("edit", "Edits a shortcut", "<edit|-e|--edit> <shortcut_name> <new_shortcut_name> <new_directory_path>", ('e', "edit"), 3),
 			Command::new("delete", "Deletes a shortcut", "<delete|-d|--del> <shortcut_name|index|directory_path>", ('d', "del"), 1),
