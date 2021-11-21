@@ -1,16 +1,21 @@
 pub mod helpers{
 	use serde::{Deserialize, Serialize};
 	use serde_json::Result;
-	use std::{env, fs};
+	use std::{env, fmt, fs};
 	use std::process::exit;
 	use std::path::{Path, PathBuf};
 
-	#[derive(Serialize, Deserialize)]
+	#[derive(Serialize, Deserialize,Clone)]
 	pub struct Record {
 		pub name: String,
 		pub path: String
 	}
 
+	impl fmt::Display for Record {
+		fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+			write!(f,"{:>10} | {}",self.name, self.path)
+		}
+	}
 	impl Record {
 		pub fn new(name: String, path: String) -> Record {
 			Record {
@@ -72,7 +77,7 @@ pub mod helpers{
 			}
 		}
 	}
-	pub fn save_file_contents(data: Vec<Record>) {
+	pub fn save_file_contents(data: &Vec<Record>) {
 		let data = serde_json::to_string(&data).unwrap();
 		fs::write(get_record_file_path(), data).expect("Unable to write file");
 	}
