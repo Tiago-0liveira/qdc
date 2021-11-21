@@ -21,6 +21,7 @@ fn main() {
 
 fn show_help() {
     let coms = &command::get_commands();
+    print!("\n   --> {}\n", "QDC".green().bold());
     coms.iter().for_each(|c| {
         println!("{}", c);
     });
@@ -36,11 +37,12 @@ fn process_cli_args(args: Vec<String>) {
     );
     if com.is_none() { 
         println!("Command {} not found", first_arg.red());
+        println!("Use qdc help to see available commands!");
         exit(1);
     }
     let com = com.unwrap();
     if (&com).args_num > (&args).len() - 2 {
-        println!("Command {} requires {} arguments, args num: {}, provided args: '{:?}'", (&com).name.cyan(), (&com).args_num.to_string().green(), (args.len() - 2).to_string().red(), args[2..].to_vec());
+        println!("Command {} requires {} arguments, args num: {}, provided args: {:?}", (&com).name.cyan(), (&com).args_num.to_string().green(), (args.len() - 2).to_string().red(), args[2..].to_vec());
         exit(1);
     }
     let args = (&args)[2..].to_vec();
@@ -57,6 +59,7 @@ fn process_cli_args(args: Vec<String>) {
                         if Path::new(&path).exists() {
                             if Path::new(&path).is_dir() {
                                 file_contents.push(helpers::Record::new((&shortcutName).to_string(), (&path).to_string()));
+                                helpers::save_file_contents(file_contents);
                                 println!("Shortcut {} created", shortcutName.green());
                             } else {
                                 println!("Path {} is not a directory", path.red());
@@ -79,7 +82,26 @@ fn process_cli_args(args: Vec<String>) {
                 exit(1);
             }
         },
-        "help" => {},
+        "help" => {
+            if args.len() != 0 && !args[0].trim().is_empty() {
+                let comName = args[0].trim();
+                let com = coms.iter().find(|c|
+                    c.name == (&comName).to_string() ||
+                    c.special_args.1 == (&comName).to_string() ||
+                    c.special_args.0.to_string() == (&comName).to_string()
+                );
+                if com.is_none() { 
+                    println!("Command {} not found", comName.red());
+                    println!("Use qdc help to see available commands!");
+                    exit(1);
+                } else {
+                    let com = com.unwrap();
+                    com.show_Usage();
+                }
+            } else {
+                show_help();
+            }
+        },
         "shortcuts" => {},
         "edit" => {},
         "delete" => {},
